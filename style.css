@@ -1,0 +1,148 @@
+body {
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  color: #333d4b;
+}
+
+.max-w-container {
+  max-width: 1080px;
+}
+
+.fin-nav {
+  background: white;
+  border-bottom: 1px solid #f2f4f6;
+  padding: 15px 0;
+}
+
+/* 카드 스타일 */
+.fin-card {
+  background: white;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f2f4f6;
+}
+
+/* 입력폼 스타일 */
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #3182f6; /* 토스 블루 */
+  margin-bottom: 12px;
+  margin-top: 24px;
+}
+.section-title:first-of-type { margin-top: 0; }
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7684;
+  margin-bottom: 6px;
+}
+
+.fin-input {
+  background-color: #f2f4f6;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.fin-input:focus {
+  background-color: white;
+  border-color: #3182f6;
+  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.1);
+  outline: none;
+}
+
+/* 토글 스위치 */
+.fin-switch .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+  cursor: pointer;
+}
+.fin-switch .form-check-input:checked {
+  background-color: #f04452; /* 경고 레드 */
+  border-color: #f04452;
+}
+
+/* 프리셋 버튼 */
+.preset-box .btn-preset {
+  background: white;
+  border: 1px solid #e5e8eb;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4e5968;
+  margin-right: 8px;
+  transition: all 0.2s;
+}
+.preset-box .btn-preset:hover, .preset-box .btn-preset.active {
+  background: #f2f4f6;
+  border-color: #d1d6db;
+  color: #191f28;
+}
+
+/* 메인 실행 버튼 */
+.fin-btn-primary {
+  background: #3182f6;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(49, 130, 246, 0.3);
+  transition: transform 0.1s ease;
+}
+.fin-btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* 결과 대시보드 요소 */
+.min-h-result {
+  min-height: 400px;
+}
+.illustration-placeholder {
+  font-size: 3rem;
+  color: #b0b8c1;
+}
+
+/* 동그란 점수판 */
+.score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 8px solid #f2f4f6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.5s ease;
+}
+.score-circle.success { border-color: #3182f6; }
+.score-circle.warning { border-color: #f59f00; }
+.score-circle.danger { border-color: #f04452; }
+
+.score-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.score-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8b95a1;
+  margin-top: 4px;
+}
+
+/* 결과 뱃지 */
+.fin-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.fin-badge.success { background: rgba(49,130,246,0.1); color: #3182f6; }
+.fin-badge.warning { background: rgba(245,159,0,0.1); color: #f59f00; }
+.fin-badge.danger { background: rgba(240,68,82,0.1); color: #f04452; }
