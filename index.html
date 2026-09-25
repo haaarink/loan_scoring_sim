@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>소액 단기 회전 대출 자동 심사 시스템 시뮬레이터</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+    }
+    .card {
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+    .badge-status {
+      font-size: 1.05rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+    }
+    .preset-btn {
+      font-weight: 500;
+      transition: all 0.15s ease-in-out;
+    }
+    .preset-btn:hover {
+      transform: translateY(-1px);
+    }
+    .score-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .field-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    .info-summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .info-summary-row:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body class="py-4">
+<div class="container" style="max-width: 1080px;">
+
+  <!-- 헤더 영역 -->
+  <div class="text-center mb-4">
+    <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-2 fw-semibold rounded-pill">Fintech Rule-Engine MVP</span>
+    <h2 class="fw-bold tracking-tight">소액 단기 회전 대출 자동 심사 시스템</h2>
+    <p class="text-muted small mb-3">건당 50만 원 / 30일 만기 단기 대출 자동 스코어링 및 즉시 승인 판정 콘솔</p>
+    
+    <!-- 프리셋 시나리오 바 -->
+    <div class="card p-3 bg-white mb-2">
+      <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
+        <span class="fw-bold text-dark me-2 small">⚡ 원클릭 시연 프리셋:</span>
+        <button type="button" class="btn btn-outline-success preset-btn btn-sm" onclick="applyPreset('prime')">
+          ✅ 시나리오 A: 우량 직장인 (즉시 승인)
+        </button>
+        <button type="button" class="btn btn-outline-warning preset-btn btn-sm" onclick="applyPreset('borderline')">
+          ⚠️ 시나리오 B: 재직기간 짧음 (수동 심사)
+        </button>
+        <button type="button" class="btn btn-outline-danger preset-btn btn-sm" onclick="applyPreset('cutoff')">
+          ⛔ 시나리오 C: 연체·점수 미달 (즉시 거절)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- 좌측: 차주 심사 데이터 입력 폼 -->
+    <div class="col-lg-6">
+      <div class="card p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold mb-0">차주 심사 데이터</h5>
+          <span class="text-muted small">모의 심사 입력</span>
+        </div>
+
+        <form id="loanForm" onsubmit="event.preventDefault(); runEvaluation();">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">신청자 성명</label>
+              <input type="text" id="applicant_name" class="form-control form-control-sm" value="김민수" required>
+            </div>
+            <div class="col-6">
+              <label class="field-label">만 나이</label>
+              <input type="number" id="age" class="form-control form-control-sm" value="32" min="19" max="99" required>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">휴대폰 명의</label>
+              <input type="text" id="phone_owner_name" class="form-control form-control-sm" value="김민수">
+            </div>
+            <div class="col-6">
+              <label class="field-label">입금계좌 예금주</label>
+              <input type="text" id="account_owner_name" class="form-control form-control-sm" value="김민수">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">KCB 신용평점</label>
+              <input type="number" id="kcb_score" class="form-control form-control-sm" value="790" min="0" max="1000">
+            </div>
+            <div class="col-6">
+              <label class="field-label">NICE 신용평점</label>
+              <input type="number" id="nice_score" class="form-control form-control-sm" value="830" min="0" max="1000">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">현재 연체 건수</label>
+              <input type="number" id="current_overdue_count" class="form-control form-control-sm" value="0" min="0">
+            </div>
+            <div class="col-6">
+              <label class="field-label">최근 6개월 연체일수</label>
+              <input type="number" id="recent_6m_overdue_days" class="form-control form-control-sm" value="0" min="0">
+            </div>
+          </div>
+
+          <div class="mb-2 p-2 bg-light rounded border">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="is_public_default">
+              <label class="form-check-label small fw-semibold" for="is_public_default">
+                개인회생 / 파산 / 신복위 / 채무불이행 등재
+              </label>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">건강보험 자격</label>
+              <select id="nhic_status" class="form-select form-select-sm">
+                <option value="직장가입자" selected>직장가입자</option>
+                <option value="지역가입자">지역가입자</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="field-label">현 직장 재직기간</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="employment_months" class="form-control" value="18" min="0">
+                <span class="input-group-text">개월</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">월평균 건보료</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="avg_nhic_premium" class="form-control" value="145000" step="5000">
+                <span class="input-group-text">원</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="field-label">급여 입금일</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">매월</span>
+                <input type="number" id="payday_day" class="form-control" value="25" min="1" max="31">
+                <span class="input-group-text">일</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="field-label">연간 추정소득</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="annual_income" class="form-control" value="45000000" step="1000000">
+                <span class="input-group-text">원</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="field-label">총 대출 잔액</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="total_debt" class="form-control" value="12000000" step="1000000">
+                <span class="input-group-text">원</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-4">
+            <div class="col-6">
+              <label class="field-label">타 대부업 이용건수</label>
+              <input type="number" id="peer_lender_count" class="form-control form-control-sm" value="0" min="0">
+            </div>
+            <div class="col-6">
+              <label class="field-label">당사 완제 이력</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="past_repaid_count" class="form-control" value="1" min="0">
+                <span class="input-group-text">회</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+            ⚡ 룰 엔진 실시간 심사 평가
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 우측: 결과 대시보드 -->
+    <div class="col-lg-6">
+      <div class="card p-4 bg-white h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold mb-0">심사 결과 대시보드</h5>
+          <span class="badge bg-secondary-subtle text-secondary small">Real-time Result</span>
+        </div>
+
+        <div id="resultContent">
+          <!-- 승인 상태 뱃지 및 점수 -->
+          <div class="text-center my-3">
+            <span id="decisionBadge" class="badge badge-status bg-success">즉시 자동 승인 (적격)</span>
+            <div class="mt-3">
+              <div class="text-muted small fw-semibold">종합 스코어링 평가 점수</div>
+              <div id="scoreDisplay" class="score-number text-dark">100점 <span class="fs-6 text-muted fw-normal">/ 100점</span></div>
+            </div>
+          </div>
+
+          <!-- 승인 상세 스펙 (승인 시 노출) -->
+          <div id="approvedDetails" class="p-3 bg-light rounded-3 border mb-3">
+            <div class="info-summary-row">
+              <span class="text-secondary small">승인 가능 한도:</span>
+              <span class="fw-bold text-primary">500,000원</span>
+            </div>
+            <div class="info-summary-row">
+              <span class="text-secondary small">급여일 연동 만기일:</span>
+              <span class="fw-bold text-dark" id="resDueDate">-</span>
+            </div>
+            <div class="info-summary-row">
+              <span class="text-secondary small">법정 최고금리 적용:</span>
+              <span class="fw-semibold text-dark">연 20.0% (30일 이자 약 8,219원)</span>
+            </div>
+            <div class="info-summary-row">
+              <span class="text-secondary small">후속 집행 프로세스:</span>
+              <span class="fw-semibold text-success small">전자 차용증 발송 및 펌뱅킹 자동 이체 대기</span>
+            </div>
+          </div>
+
+          <!-- 스코어 배점 바 및 세부 항목 -->
+          <div id="scoreBreakdownBox" class="mb-3">
+            <div class="d-flex justify-content-between small fw-bold text-secondary mb-1">
+              <span>스코어 달성률</span>
+              <span id="progressText">100%</span>
+            </div>
+            <div class="progress mb-3" style="height: 10px;">
+              <div id="progressBar" class="progress-bar bg-success" style="width: 100%;"></div>
+            </div>
+            <div class="list-group list-group-flush border-top border-bottom small" id="breakdownList"></div>
+          </div>
+
+          <!-- 거절 사유 (거절 시 노출) -->
+          <div id="rejectReasonsBox" class="alert alert-danger mb-0" style="display: none;">
+            <div class="fw-bold small mb-2">🚨 즉시 부결(Hard Cut-off) 사유:</div>
+            <ul class="mb-0 ps-3 small" id="cutoffReasonsList"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 프리셋 데이터
+const presets = {
+  prime: {
+    applicant_name: "김민수", age: 32, phone_owner_name: "김민수", account_owner_name: "김민수",
+    kcb_score: 790, nice_score: 830, current_overdue_count: 0, recent_6m_overdue_days: 0,
+    is_public_default: false, nhic_status: "직장가입자", employment_months: 18, avg_nhic_premium: 145000,
+    payday_day: 25, annual_income: 45000000, total_debt: 12000000, peer_lender_count: 0, past_repaid_count: 1
+  },
+  borderline: {
+    applicant_name: "박준영", age: 26, phone_owner_name: "박준영", account_owner_name: "박준영",
+    kcb_score: 690, nice_score: 730, current_overdue_count: 0, recent_6m_overdue_days: 2,
+    is_public_default: false, nhic_status: "직장가입자", employment_months: 4, avg_nhic_premium: 85000,
+    payday_day: 10, annual_income: 26000000, total_debt: 18000000, peer_lender_count: 1, past_repaid_count: 0
+  },
+  cutoff: {
+    applicant_name: "이진호", age: 23, phone_owner_name: "이진호", account_owner_name: "이진호",
+    kcb_score: 610, nice_score: 640, current_overdue_count: 1, recent_6m_overdue_days: 15,
+    is_public_default: true, nhic_status: "지역가입자", employment_months: 1, avg_nhic_premium: 32000,
+    payday_day: 15, annual_income: 15000000, total_debt: 22000000, peer_lender_count: 2, past_repaid_count: 0
+  }
+};
+
+function applyPreset(name) {
+  const p = presets[name];
+  for (let key in p) {
+    const el = document.getElementById(key);
+    if (!el) continue;
+    if (el.type === "checkbox") {
+      el.checked = p[key];
+    } else {
+      el.value = p[key];
+    }
+  }
+  runEvaluation();
+}
+
+// 1단계: 하드 컷오프
+function evaluateHardCutoff(data) {
+  const violations = [];
+  if (data.kcb_score < 650 || data.nice_score < 700) {
+    violations.push(`신용점수 미달 (KCB: ${data.kcb_score}점, NICE: ${data.nice_score}점 / 기준: KCB 650, NICE 700 이상)`);
+  }
+  if (data.current_overdue_count > 0 || data.recent_6m_overdue_days >= 5) {
+    violations.push("현재 연체 보유 중이거나 최근 6개월 내 5일 이상 연체 이력 존재");
+  }
+  if (data.is_public_default) {
+    violations.push("개인회생 / 파산 / 신복위 워크아웃 / 신용정보원 채무불이행 등재자");
+  }
+  if (data.nhic_status !== "직장가입자" || data.employment_months < 3) {
+    violations.push("건강보험 직장가입자 자격 상실 또는 재직기간 3개월 미만 (재직 미달)");
+  }
+  if (data.applicant_name !== data.phone_owner_name || data.applicant_name !== data.account_owner_name) {
+    violations.push("신청자, 휴대폰 명의, 입금 계좌의 실명 불일치 (사기/대포통장 방지 차단)");
+  }
+  if (data.peer_lender_count >= 2) {
+    violations.push(`타 대부업체 과다 이용 (${data.peer_lender_count}건 보유 / 최대 1건 이하만 허용)`);
+  }
+  return violations;
+}
+
+// 2단계: 정량 스코어링 (100점 만점)
+function calculateScore(data) {
+  // ① 신용평점 (30점)
+  let cb_pts = 15;
+  if (data.kcb_score >= 750 && data.nice_score >= 800) cb_pts = 30;
+  else if (data.kcb_score >= 700 || data.nice_score >= 750) cb_pts = 23;
+
+  // ② 재직 및 건보료 (35점)
+  let emp_pts = (data.employment_months >= 12) ? 15 : ((data.employment_months >= 6) ? 10 : 5);
+  if (data.avg_nhic_premium >= 120000) emp_pts += 20;
+  else if (data.avg_nhic_premium >= 70000) emp_pts += 15;
+  else emp_pts += 10;
+
+  // ③ 부채 DTI 및 대부이력 (20점)
+  const dti = data.annual_income > 0 ? (data.total_debt / data.annual_income * 100) : 999;
+  let debt_pts = (dti <= 40) ? 15 : ((dti <= 80) ? 10 : ((dti <= 120) ? 5 : 0));
+  if (data.peer_lender_count === 0) debt_pts += 5;
+
+  // ④ 연령 및 거래신뢰도 (15점)
+  let profile_pts = (data.age >= 28 && data.age <= 55) ? 10 : ((data.age >= 24 && data.age <= 27 || data.age >= 56) ? 6 : 3);
+  profile_pts += (data.past_repaid_count >= 1) ? 5 : 2;
+
+  const total = cb_pts + emp_pts + debt_pts + profile_pts;
+  return { cb_pts, emp_pts, debt_pts, profile_pts, total };
+}
+
+// 3단계: 급여일 연계 만기일 산출
+function calculateDueDate(paydayDay) {
+  const today = new Date();
+  let targetYear = today.getFullYear();
+  let targetMonth = today.getMonth(); // 0-indexed
+
+  let targetDate = new Date(targetYear, targetMonth, paydayDay);
+  if (targetDate <= today) {
+    targetMonth += 1;
+    targetDate = new Date(targetYear, targetMonth, paydayDay);
+  }
+
+  const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+  // 5일 이내로 너무 임박한 경우 익월 급여일로 설정
+  if (diffDays <= 5) {
+    targetMonth += 1;
+    targetDate = new Date(targetYear, targetMonth, paydayDay);
+  }
+
+  // 급여일 익일 (D+1)
+  targetDate.setDate(targetDate.getDate() + 1);
+  return `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월 ${targetDate.getDate()}일`;
+}
+
+function runEvaluation() {
+  const data = {
+    applicant_name: document.getElementById("applicant_name").value.trim(),
+    phone_owner_name: document.getElementById("phone_owner_name").value.trim(),
+    account_owner_name: document.getElementById("account_owner_name").value.trim(),
+    age: parseInt(document.getElementById("age").value) || 0,
+    kcb_score: parseInt(document.getElementById("kcb_score").value) || 0,
+    nice_score: parseInt(document.getElementById("nice_score").value) || 0,
+    current_overdue_count: parseInt(document.getElementById("current_overdue_count").value) || 0,
+    recent_6m_overdue_days: parseInt(document.getElementById("recent_6m_overdue_days").value) || 0,
+    is_public_default: document.getElementById("is_public_default").checked,
+    nhic_status: document.getElementById("nhic_status").value,
+    employment_months: parseInt(document.getElementById("employment_months").value) || 0,
+    avg_nhic_premium: parseInt(document.getElementById("avg_nhic_premium").value) || 0,
+    payday_day: parseInt(document.getElementById("payday_day").value) || 25,
+    annual_income: parseInt(document.getElementById("annual_income").value) || 0,
+    total_debt: parseInt(document.getElementById("total_debt").value) || 0,
+    peer_lender_count: parseInt(document.getElementById("peer_lender_count").value) || 0,
+    past_repaid_count: parseInt(document.getElementById("past_repaid_count").value) || 0
+  };
+
+  const cutoffReasons = evaluateHardCutoff(data);
+  const badge = document.getElementById("decisionBadge");
+  const scoreDisplay = document.getElementById("scoreDisplay");
+  const approvedDetails = document.getElementById("approvedDetails");
+  const scoreBreakdownBox = document.getElementById("scoreBreakdownBox");
+  const rejectReasonsBox = document.getElementById("rejectReasonsBox");
+  const cutoffList = document.getElementById("cutoffReasonsList");
+
+  if (cutoffReasons.length > 0) {
+    // 하드 컷오프 부결
+    badge.className = "badge badge-status bg-danger";
+    badge.innerText = "⛔ 즉시 거절 (하드 컷오프 위반)";
+    scoreDisplay.innerHTML = `<span class="text-danger">0점</span> <span class="fs-6 text-muted fw-normal">/ 100점 (탈락)</span>`;
+    
+    approvedDetails.style.display = "none";
+    scoreBreakdownBox.style.display = "none";
+    rejectReasonsBox.style.display = "block";
+    cutoffList.innerHTML = cutoffReasons.map(r => `<li>${r}</li>`).join("");
+    return;
+  }
+
+  // 스코어링 계산
+  const sc = calculateScore(data);
+  rejectReasonsBox.style.display = "none";
+  scoreBreakdownBox.style.display = "block";
+
+  document.getElementById("progressBar").style.width = sc.total + "%";
+  document.getElementById("progressText").innerText = sc.total + "%";
+
+  const breakdownList = document.getElementById("breakdownList");
+  breakdownList.innerHTML = `
+    <div class="d-flex justify-content-between py-2">
+      <span class="text-muted">① 신용평점 지표 (KCB/NICE)</span>
+      <span class="fw-bold text-dark">${sc.cb_pts} / 30점</span>
+    </div>
+    <div class="d-flex justify-content-between py-2">
+      <span class="text-muted">② 재직 안정성 및 건보 소득</span>
+      <span class="fw-bold text-dark">${sc.emp_pts} / 35점</span>
+    </div>
+    <div class="d-flex justify-content-between py-2">
+      <span class="text-muted">③ 부채비율(DTI) 및 대부 이용</span>
+      <span class="fw-bold text-dark">${sc.debt_pts} / 20점</span>
+    </div>
+    <div class="d-flex justify-content-between py-2">
+      <span class="text-muted">④ 연령 및 거래 신뢰도</span>
+      <span class="fw-bold text-dark">${sc.profile_pts} / 15점</span>
+    </div>
+  `;
+
+  const dueDate = calculateDueDate(data.payday_day);
+  document.getElementById("resDueDate").innerText = dueDate;
+
+  if (sc.total >= 80) {
+    badge.className = "badge badge-status bg-success";
+    badge.innerText = "✅ 즉시 자동 승인 (적격 차주)";
+    scoreDisplay.innerHTML = `<span class="text-success">${sc.total}점</span> <span class="fs-6 text-muted fw-normal">/ 100점</span>`;
+    document.getElementById("progressBar").className = "progress-bar bg-success";
+    approvedDetails.style.display = "block";
+  } else if (sc.total >= 65) {
+    badge.className = "badge badge-status bg-warning text-dark";
+    badge.innerText = "⚠️ 수동 심사 필요 (정밀 확인)";
+    scoreDisplay.innerHTML = `<span class="text-warning">${sc.total}점</span> <span class="fs-6 text-muted fw-normal">/ 100점</span>`;
+    document.getElementById("progressBar").className = "progress-bar bg-warning";
+    approvedDetails.style.display = "block";
+    document.getElementById("resDueDate").innerText = dueDate + " (유선 재직확인 후 확정)";
+  } else {
+    badge.className = "badge badge-status bg-danger";
+    badge.innerText = "⛔ 종합 점수 미달로 인한 거절";
+    scoreDisplay.innerHTML = `<span class="text-danger">${sc.total}점</span> <span class="fs-6 text-muted fw-normal">/ 100점</span>`;
+    document.getElementById("progressBar").className = "progress-bar bg-danger";
+    approvedDetails.style.display = "none";
+  }
+}
+
+// 최초 1회 로딩 시 실행
+window.onload = function() {
+  runEvaluation();
+};
+</script>
+</body>
+</html>
